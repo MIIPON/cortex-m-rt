@@ -10,4 +10,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .root_source_file = b.path("src/cortex-m-rt.zig"),
     });
+
+    _ = b.addInstallFile(b.path("link.x"), "out/link.x");
 }
