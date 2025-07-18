@@ -11,5 +11,6 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/cortex-m-rt.zig"),
     });
 
-    b.installFile("link.x", "out/link.x");
+    b.getInstallStep().dependOn(&b.addInstallFile(b.path("link.x"), "out/link.x").step);
+    // _ = ;
 }
