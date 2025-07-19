@@ -2,9 +2,9 @@ const std = @import("std");
 
 const link_x_contents =
     \\/* provide by rt */
-    \\EXTERN(__ENTRY); /* witch link to section .vector_table.entry */
-    \\EXTERN(__EXCEPTIONS); /* witch link to section .vector_table.exceptions */
-    \\EXTERN(__INTERRUPTS); /* witch link to section .vector_table.interrupts */
+    \\EXTERN(__ENTRY); /* which link to section .vector_table.entry */
+    \\EXTERN(__EXCEPTIONS); /* which link to section .vector_table.exceptions */
+    \\EXTERN(__INTERRUPTS); /* which link to section .vector_table.interrupts */
     \\
     \\/* provide by rt */
     \\EXTERN(defaultEntry); /* default entry */
