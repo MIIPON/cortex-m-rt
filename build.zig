@@ -108,6 +108,7 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/cortex-m-rt.zig"),
     });
 
-    const link_x_file = b.addWriteFile("link.x", link_x_contents);
-    b.getInstallStep().dependOn(&link_x_file.step);
+    const link_x = b.addInstallFile(b.path("link.x"), "out/link.x");
+
+    b.getInstallStep().dependOn(&link_x.step);
 }
