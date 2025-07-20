@@ -92,3 +92,8 @@ SECTIONS
         *(.ARM.extab.*)
     }
 }
+
+__ints_nums = SIZEOF(.vector_table) / 4;
+
+ASSERT((__ints_nums == 48) || (__ints_nums == 256) || (__ints_nums == 496), "
+ERROR(cortex-m-rt): Lack of __INTERRUPTS symbol at section .vector_table.interrupts!");

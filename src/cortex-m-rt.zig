@@ -52,6 +52,7 @@ pub const Exceptions = exps: {
     } else @compileError("Unsupported ARM architecture");
 };
 
+// export to linker scripts
 export fn defaultEntry() callconv(.c) void {
     // Set the stack pointer to the top of the stack if requested
     asm volatile (
@@ -114,6 +115,7 @@ export fn defaultEntry() callconv(.c) void {
     );
 }
 
+// export to linker scripts
 export fn defaultHandler() callconv(.c) void {
     // Default handler implementation
     while (true) {
@@ -121,11 +123,14 @@ export fn defaultHandler() callconv(.c) void {
     }
 }
 
+// export to linker scripts
 export fn defaultInit() callconv(.c) void {
     // Default initialization code
 }
 
+// export to linker scripts
 export const __ENTRY linksection(".vector_table.entry") = @extern(ExceptionHandler, .{ .name = "__entry" });
+// export to linker scripts
 export const __EXCEPTIONS linksection(".vector_table.exceptions") = [_]?ExceptionHandler{
     @extern(ExceptionHandler, .{ .name = "NonMaskableInt_Handler" }), // NonMaskableInt
     @extern(ExceptionHandler, .{ .name = "HardFault_Handler" }), // HardFault
@@ -142,11 +147,18 @@ export const __EXCEPTIONS linksection(".vector_table.exceptions") = [_]?Exceptio
     @extern(ExceptionHandler, .{ .name = "PendSV_Handler" }), // PendSV
     @extern(ExceptionHandler, .{ .name = "SysTick_Handler" }), // SysTick
 };
+const __INTERRUPTS = [_]?InterruptHandler{&defaultHandler} ** _NUMS;
 
-pub fn interruptsVector(comptime ints: *const [_NUMS]?InterruptHandler) void {
-    @export(ints, .{ .name = "__INTERRUPTS", .section = ".vector_table.interrupts" });
+// export to linker scripts
+pub fn interruptsVector(comptime devInts: ?*const [_NUMS]?InterruptHandler) void {
+    if (devInts) |__interrupts| {
+        @export(__interrupts, .{ .name = "__INTERRUPTS", .section = ".vector_table.interrupts" });
+    } else {
+        @export(&__INTERRUPTS, .{ .name = "__INTERRUPTS", .section = ".vector_table.interrupts" });
+    }
 }
 
+// export to linker scripts
 pub fn entry(comptime _entry: anytype) void {
     @export(_entry, .{ .name = "main" });
 }
