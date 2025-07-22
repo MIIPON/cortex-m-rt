@@ -64,6 +64,8 @@ SECTIONS
         . = ALIGN(4);
     } > FLASH
 
+    __data_rom = LOADADDR(.data);
+
     .data :
     {
         . = ALIGN(4);
@@ -71,9 +73,7 @@ SECTIONS
         *(.data .data.*)
         . = ALIGN(4);
         __data_end = .;
-    } > RAM AT > FLASH
-
-    __data_rom = LOADADDR(.data);
+    } > RAM AT > FLASH  
 
     .bss : 
     {

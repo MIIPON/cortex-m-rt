@@ -52,50 +52,27 @@ pub const Exceptions = exps: {
     } else @compileError("Unsupported ARM architecture");
 };
 
-// export to linker scripts
+// 默认复位入口函数
 export fn defaultEntry() callconv(.c) void {
-    // Set the stack pointer to the top of the stack if requested
-    asm volatile (
-        \\ldr r0, = __stack_top
-        \\msr msp, r0
-    );
+    { //初始化.data和.bss段
+        const data_start = @extern([*]u8, .{ .name = "__data_start" });
+        const data_end = @extern([*]u8, .{ .name = "__data_end" });
+        const data_rom = @extern([*]u8, .{ .name = "__data_rom" });
+        const data_len = @intFromPtr(data_end) - @intFromPtr(data_start);
 
-    // Set the vector table address if requested
-    asm volatile (
-        \\ldr r0, = 0xe000ed08
-        \\ldr r1, = __vector_table
-        \\str r1, [r0]
-    );
+        for (0..data_len) |i| {
+            data_start[i] = data_rom[i];
+        }
 
-    // Call the pre-initialization function
-    asm volatile (
-        \\bl __preinit  
-    );
+        const bss_start = @extern([*]u8, .{ .name = "__bss_start" });
+        const bss_end = @extern([*]u8, .{ .name = "__bss_end" });
+        const bss_len = @intFromPtr(bss_end) - @intFromPtr(bss_start);
 
-    // Initialize data and bss sections
-    asm volatile (
-        \\ldr r0, = __data_start
-        \\ldr r1, = __data_end
-        \\ldr r2, = __data_rom
-        \\0:
-        \\cmp r0, r1
-        \\beq 1f
-        \\ldm r1!,{r3}
-        \\stm r0!,{r3}
-        \\b 0b
-        \\1:
-        \\ldr r0, = __bss_start
-        \\ldr r1, = __bss_end
-        \\mov r2, #0
-        \\0:
-        \\cmp r0, r1
-        \\beq 1f
-        \\stm r0!, {r2}
-        \\b 0b
-        \\1:
-    );
+        for (0..bss_len) |i| {
+            bss_start[i] = 0;
+        }
+    }
 
-    // Enable FPU if requested
     if (use_fpu) {
         asm volatile (
             \\ldr r0, = 0xe000ed88
@@ -108,29 +85,19 @@ export fn defaultEntry() callconv(.c) void {
         );
     }
 
-    // Call main function after setup
-    asm volatile (
-        \\bl main
-        \\udf #0  // Undefined instruction to indicate end of execution
-    );
+    @extern(ExceptionHandler, .{ .name = "__preinit" })();
+    @extern(EntryFunction, .{ .name = "main" })();
 }
 
-// export to linker scripts
+// 默认中断处理
 export fn defaultHandler() callconv(.c) void {
-    // Default handler implementation
-    while (true) {
-        // Infinite loop to indicate an unhandled exception
-    }
+    while (true) {}
 }
 
-// export to linker scripts
-export fn defaultInit() callconv(.c) void {
-    // Default initialization code
-}
+// 默认系统初始化
+export fn defaultInit() callconv(.c) void {}
 
-// export to linker scripts
 export const __ENTRY linksection(".vector_table.entry") = @extern(ExceptionHandler, .{ .name = "__entry" });
-// export to linker scripts
 export const __EXCEPTIONS linksection(".vector_table.exceptions") = [_]?ExceptionHandler{
     @extern(ExceptionHandler, .{ .name = "NonMaskableInt_Handler" }), // NonMaskableInt
     @extern(ExceptionHandler, .{ .name = "HardFault_Handler" }), // HardFault
@@ -149,7 +116,7 @@ export const __EXCEPTIONS linksection(".vector_table.exceptions") = [_]?Exceptio
 };
 const __INTERRUPTS = [_]?InterruptHandler{&defaultHandler} ** _NUMS;
 
-// export to linker scripts
+// 中断向量表
 pub fn interruptsVector(comptime devInts: ?*const [_NUMS]?InterruptHandler) void {
     if (devInts) |__interrupts| {
         @export(__interrupts, .{ .name = "__INTERRUPTS", .section = ".vector_table.interrupts" });
@@ -158,7 +125,7 @@ pub fn interruptsVector(comptime devInts: ?*const [_NUMS]?InterruptHandler) void
     }
 }
 
-// export to linker scripts
+// 设备入口函数
 pub fn entry(comptime _entry: anytype) void {
     @export(_entry, .{ .name = "main" });
 }
